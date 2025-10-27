@@ -87,6 +87,11 @@ pub enum ControlError {
         selector: u8,
         source: hidapi::HidError,
     },
+    ReportRead {
+        report_id: u8,
+        selector: u8,
+        source: hidapi::HidError,
+    },
     UnsupportedFeature {
         device_id: DeviceId,
     },
@@ -113,6 +118,14 @@ impl fmt::Display for ControlError {
             } => write!(
                 f,
                 "failed to send feature report (id=0x{report_id:02X}, selector=0x{selector:02X}): {source}"
+            ),
+            ControlError::ReportRead {
+                report_id,
+                selector,
+                source,
+            } => write!(
+                f,
+                "failed to read feature report (id=0x{report_id:02X}, selector=0x{selector:02X}): {source}"
             ),
             ControlError::UnsupportedFeature { device_id } => {
                 write!(f, "device {device_id:?} does not support this feature")
@@ -152,4 +165,38 @@ pub fn set_sidetone(device_id: DeviceId, enabled: bool) -> Result<(), ControlErr
         })?;
 
     Ok(())
+}
+
+/// Read the current sidetone state. Returns `Ok(Some(true/false))` when the device reports a valid value,
+/// `Ok(None)` when the response cannot be interpreted (selector mismatch, truncated data).
+pub fn read_sidetone_state(device_id: DeviceId) -> Result<Option<bool>, ControlError> {
+    let descriptor = find_descriptor(device_id);
+    let feature = validate_feature(device_id, descriptor)?;
+
+    let api = HidApi::new().map_err(|source| ControlError::HidInit { source })?;
+    let device = api
+        .open(descriptor.vendor_id, descriptor.product_id)
+        .map_err(|source| ControlError::DeviceOpen {
+            vendor_id: descriptor.vendor_id,
+            product_id: descriptor.product_id,
+            source,
+        })?;
+
+    let mut buffer = vec![0u8; feature.length];
+    buffer[0] = feature.report_id;
+    let length =
+        device
+            .get_feature_report(&mut buffer)
+            .map_err(|source| ControlError::ReportRead {
+                report_id: feature.report_id,
+                selector: feature.selector,
+                source,
+            })?;
+
+    if length < 4 || buffer.get(1).copied() != Some(feature.selector) {
+        return Ok(None);
+    }
+
+    let value = u16::from_le_bytes([buffer[2], buffer[3]]);
+    Ok(Some(value != 0))
 }

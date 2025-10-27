@@ -114,6 +114,27 @@ async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
   }
 }
 
+async function refreshSidetoneState() {
+  if (!selectedDeviceId.value || devicesLoading.value || sidetoneBusy.value) {
+    return;
+  }
+  sidetoneBusy.value = true;
+  sidetoneError.value = null;
+  try {
+    const state = await invoke<boolean | null>("get_sidetone_state", {
+      deviceId: selectedDeviceId.value,
+    });
+    if (typeof state === "boolean") {
+      suppressSidetoneWatcher = true;
+      sidetuneEnabled.value = state;
+    }
+  } catch (error) {
+    sidetoneError.value = describeError(error);
+  } finally {
+    sidetoneBusy.value = false;
+  }
+}
+
 watch(sidetuneEnabled, async (enabled, previous) => {
   if (suppressSidetoneWatcher) {
     suppressSidetoneWatcher = false;
@@ -124,12 +145,21 @@ watch(sidetuneEnabled, async (enabled, previous) => {
   await pushSidetoneState(enabled, fallback);
 });
 
-watch(selectedDeviceId, async (deviceId, previous) => {
-  if (devicesLoading.value || deviceId === previous || !deviceId) return;
-  if (sidetuneEnabled.value) {
-    await pushSidetoneState(true, false);
-  }
-});
+watch(
+  selectedDeviceId,
+  async (deviceId, previous) => {
+    if (deviceId === previous) return;
+    if (!deviceId) {
+      sidetoneError.value = null;
+      suppressSidetoneWatcher = true;
+      sidetuneEnabled.value = false;
+      return;
+    }
+    if (devicesLoading.value) return;
+    await refreshSidetoneState();
+  },
+  { immediate: true }
+);
 </script>
 
 <template>
@@ -203,35 +233,35 @@ watch(selectedDeviceId, async (deviceId, previous) => {
 
         <div class="mt-6 grid gap-6">
           <article
-            class="flex items-start justify-between gap-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40"
+            class="rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40 relative"
           >
             <div class="space-y-1.5">
               <h3 class="text-base font-semibold text-neutral-900">
                 {{ t("settings.dts.title") }}
               </h3>
-              <p class="text-sm leading-relaxed text-neutral-600">
+              <p class="text-xs leading-relaxed text-neutral-600">
                 {{ t("settings.dts.description") }}
               </p>
             </div>
 
-            <div class="flex flex-col items-end mt-1">
+            <div class="absolute top-5 right-5">
               <Switch v-model="dtsEnabled" />
             </div>
           </article>
 
           <article
-            class="flex items-start justify-between gap-4 rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40"
+            class="rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40 relative"
           >
             <div class="space-y-1.5">
               <h3 class="text-base font-semibold text-neutral-900">
                 {{ t("settings.sidetune.title") }}
               </h3>
-              <p class="text-sm leading-relaxed text-neutral-600">
+              <p class="text-xs leading-relaxed text-neutral-600">
                 {{ t("settings.sidetune.description") }}
               </p>
             </div>
 
-            <div class="flex flex-col items-end mt-1">
+            <div class="absolute top-5 right-5">
               <Switch
                 v-model="sidetuneEnabled"
                 :aria-label="t('settings.sidetune.aria')"
