@@ -1,0 +1,414 @@
+[Port10]  :  USB-Verbundgerät
+
+
+Is Port User Connectable:         yes
+Is Port Debug Capable:            no
+Companion Port Number:            24
+Companion Hub Symbolic Link Name: USB#ROOT_HUB30#4&37b34cdc&0&0#{f18a0e88-c30c-11d0-8815-00a0c906bed8}
+Protocols Supported:
+ USB 1.1:                         yes
+ USB 2.0:                         yes
+ USB 3.0:                         no
+
+Device Power State:               PowerDeviceD0
+
+
+       ---===>USB4 Information<===---
+Port is USB4 Capable:              No
+Device is tunneled through USB4:   No
+
+       ---===>Device Information<===---
+English product name: "HyperX Cloud III"
+
+ConnectionStatus:                  
+Current Config Value:              0x01  -> Device Bus Speed: Full (is not SuperSpeed or higher capable)
+Device Address:                    0x03
+Open Pipes:                           1
+
+          ===>Device Descriptor<===
+bLength:                           0x12
+bDescriptorType:                   0x01
+bcdUSB:                          0x0200
+bDeviceClass:                      0x00  -> This is an Interface Class Defined Device
+bDeviceSubClass:                   0x00
+bDeviceProtocol:                   0x00
+bMaxPacketSize0:                   0x40 = (64) Bytes
+idVendor:                        0x03F0 = HP Inc.
+idProduct:                       0x089D
+bcdDevice:                       0x4110
+iManufacturer:                     0x01
+     English (United States)  "HP, Inc"
+iProduct:                          0x02
+     English (United States)  "HyperX Cloud III"
+iSerialNumber:                     0x03
+     English (United States)  "000000000000"
+bNumConfigurations:                0x01
+
+          ---===>Open Pipes<===---
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x83  -> Direction: IN - EndpointID: 3
+bmAttributes:                      0x03  -> Interrupt Transfer Type
+wMaxPacketSize:                  0x0040 = 0x40 bytes
+bInterval:                         0x08
+
+       ---===>Full Configuration Descriptor<===---
+
+          ===>Configuration Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x02
+wTotalLength:                    0x0148  -> Validated
+bNumInterfaces:                    0x04
+bConfigurationValue:               0x01
+iConfiguration:                    0x04
+*!*ERROR:  No String Descriptor for index 4!
+bmAttributes:                      0x80  -> Bus Powered
+MaxPower:                          0x32 = 100 mA
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x00
+bAlternateSetting:                 0x00
+bNumEndpoints:                     0x00
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x01  -> Audio Control Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Audio Control Interface Header Descriptor<===
+bLength:                           0x0A
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x01 (HEADER)
+bcdADC:                          0x0100
+wTotalLength:                    0x0047
+bInCollection:                     0x02
+baInterfaceNr[1]:                  0x01
+baInterfaceNr[2]:                  0x02
+
+          ===>Audio Control Input Terminal Descriptor<===
+bLength:                           0x0C
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (INPUT_TERMINAL)
+bTerminalID:                       0x01
+wTerminalType:                   0x0101 (USB streaming)
+bAssocTerminal:                    0x00
+bNrChannels:                       0x02
+wChannelConfig:                  0x0003
+                                 (Left Front (L))
+                                 (Right Ront (R))
+iChannelNames:                     0x00
+iTerminal:                         0x00
+
+          ===>Audio Control Feature Unit Descriptor<===
+bLength:                           0x0A
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x06 (FEATURE_UNIT)
+bUnitID:                           0x02
+bSourceID:                         0x01
+bControlSize:                      0x01
+bmaControls[master]:               01 
+                                   (Mute)
+bmaControls[channel 0]:            02 
+                                   (Volume)
+bmaControls[channel 1]:            02 
+                                   (Volume)
+iFeature:                          0x04
+
+          ===>Audio Control Output Terminal Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x03 (OUTPUT_TERMINAL)
+bTerminalID:                       0x03
+wTerminalType:                   0x0302 (Headphones)
+bAssocTerminal:                    0x04
+bSourceID:                         0x02
+iTerminal:                         0x00
+
+          ===>Audio Control Output Terminal Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x03 (OUTPUT_TERMINAL)
+bTerminalID:                       0x06
+wTerminalType:                   0x0101 (USB streaming)
+bAssocTerminal:                    0x00
+bSourceID:                         0x05
+iTerminal:                         0x00
+
+          ===>Audio Control Feature Unit Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x06 (FEATURE_UNIT)
+bUnitID:                           0x05
+bSourceID:                         0x04
+bControlSize:                      0x01
+bmaControls[master]:               03 
+                                   (Mute)
+                                   (Volume)
+bmaControls[channel 0]:            00 
+iFeature:                          0x06
+
+          ===>Audio Control Input Terminal Descriptor<===
+bLength:                           0x0C
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (INPUT_TERMINAL)
+bTerminalID:                       0x04
+wTerminalType:                   0x0201 (Microphone)
+bAssocTerminal:                    0x03
+bNrChannels:                       0x01
+wChannelConfig:                  0x0001
+                                 (Left Front (L))
+iChannelNames:                     0x00
+iTerminal:                         0x00
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x01
+bAlternateSetting:                 0x00
+bNumEndpoints:                     0x00
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x01
+bAlternateSetting:                 0x01
+bNumEndpoints:                     0x01
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Audio Streaming Class Specific Interface Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x01 (AS_GENERAL)
+bTerminalLink:                     0x01
+bDelay:                            0x03
+wFormatTag:                      0x0001 (PCM)
+
+          ===>Audio Streaming Format Type Descriptor<===
+bLength:                           0x11
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (FORMAT_TYPE)
+bFormatType:                       0x01 (FORMAT_TYPE_I)
+bNrChannels:                       0x02
+bSubframeSize:                     0x02
+bBitResolution:                    0x10 (16)
+bSamFreqType:                      0x03 (Discrete)
+tSamFreq[1]:                   0x00AC44 (44100 Hz)
+tSamFreq[2]:                   0x00BB80 (48000 Hz)
+tSamFreq[3]:                   0x017700 (96000 Hz)
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x01  -> Direction: OUT - EndpointID: 1
+bmAttributes:                      0x0D  -> Isochronous Transfer Type, Synchronization Type = Synchronous, Usage Type = Data Endpoint
+wMaxPacketSize:                  0x0180 = 0x180 bytes
+wInterval:                       0x0001
+bSyncAddress:                      0x00
+
+          ===>Audio Streaming Class Specific Audio Data Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x25 (CS_ENDPOINT)
+bDescriptorSubtype:                0x01 (EP_GENERAL)
+bmAttributes:                      0x01
+                                   (Sampling Frequency control)
+bLockDelayUnits:                   0x01 (Milliseconds)
+wLockDelay:                      0x0004
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x01
+bAlternateSetting:                 0x02
+bNumEndpoints:                     0x01
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Audio Streaming Class Specific Interface Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x01 (AS_GENERAL)
+bTerminalLink:                     0x01
+bDelay:                            0x03
+wFormatTag:                      0x0001 (PCM)
+
+          ===>Audio Streaming Format Type Descriptor<===
+bLength:                           0x11
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (FORMAT_TYPE)
+bFormatType:                       0x01 (FORMAT_TYPE_I)
+bNrChannels:                       0x02
+bSubframeSize:                     0x03
+bBitResolution:                    0x18 (24)
+bSamFreqType:                      0x03 (Discrete)
+tSamFreq[1]:                   0x00AC44 (44100 Hz)
+tSamFreq[2]:                   0x00BB80 (48000 Hz)
+tSamFreq[3]:                   0x017700 (96000 Hz)
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x01  -> Direction: OUT - EndpointID: 1
+bmAttributes:                      0x0D  -> Isochronous Transfer Type, Synchronization Type = Synchronous, Usage Type = Data Endpoint
+wMaxPacketSize:                  0x0240 = 0x240 bytes
+wInterval:                       0x0001
+bSyncAddress:                      0x00
+
+          ===>Audio Streaming Class Specific Audio Data Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x25 (CS_ENDPOINT)
+bDescriptorSubtype:                0x01 (EP_GENERAL)
+bmAttributes:                      0x01
+                                   (Sampling Frequency control)
+bLockDelayUnits:                   0x01 (Milliseconds)
+wLockDelay:                      0x0004
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x02
+bAlternateSetting:                 0x00
+bNumEndpoints:                     0x00
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x02
+bAlternateSetting:                 0x01
+bNumEndpoints:                     0x01
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Audio Streaming Class Specific Interface Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x01 (AS_GENERAL)
+bTerminalLink:                     0x06
+bDelay:                            0x03
+wFormatTag:                      0x0001 (PCM)
+
+          ===>Audio Streaming Format Type Descriptor<===
+bLength:                           0x11
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (FORMAT_TYPE)
+bFormatType:                       0x01 (FORMAT_TYPE_I)
+bNrChannels:                       0x01
+bSubframeSize:                     0x02
+bBitResolution:                    0x10 (16)
+bSamFreqType:                      0x03 (Discrete)
+tSamFreq[1]:                   0x00AC44 (44100 Hz)
+tSamFreq[2]:                   0x00BB80 (48000 Hz)
+tSamFreq[3]:                   0x017700 (96000 Hz)
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x81  -> Direction: IN - EndpointID: 1
+bmAttributes:                      0x0D  -> Isochronous Transfer Type, Synchronization Type = Synchronous, Usage Type = Data Endpoint
+wMaxPacketSize:                  0x00C0 = 0xC0 bytes
+wInterval:                       0x0001
+bSyncAddress:                      0x00
+
+          ===>Audio Streaming Class Specific Audio Data Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x25 (CS_ENDPOINT)
+bDescriptorSubtype:                0x01 (EP_GENERAL)
+bmAttributes:                      0x01
+                                   (Sampling Frequency control)
+bLockDelayUnits:                   0x01 (Milliseconds)
+wLockDelay:                      0x0004
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x02
+bAlternateSetting:                 0x02
+bNumEndpoints:                     0x01
+bInterfaceClass:                   0x01  -> Audio Interface Class
+bInterfaceSubClass:                0x02  -> Audio Streaming Interface SubClass
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>Audio Streaming Class Specific Interface Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x01 (AS_GENERAL)
+bTerminalLink:                     0x06
+bDelay:                            0x03
+wFormatTag:                      0x0001 (PCM)
+
+          ===>Audio Streaming Format Type Descriptor<===
+bLength:                           0x11
+bDescriptorType:                   0x24 (CS_INTERFACE)
+bDescriptorSubtype:                0x02 (FORMAT_TYPE)
+bFormatType:                       0x01 (FORMAT_TYPE_I)
+bNrChannels:                       0x01
+bSubframeSize:                     0x03
+bBitResolution:                    0x18 (24)
+bSamFreqType:                      0x03 (Discrete)
+tSamFreq[1]:                   0x00AC44 (44100 Hz)
+tSamFreq[2]:                   0x00BB80 (48000 Hz)
+tSamFreq[3]:                   0x017700 (96000 Hz)
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x81  -> Direction: IN - EndpointID: 1
+bmAttributes:                      0x0D  -> Isochronous Transfer Type, Synchronization Type = Synchronous, Usage Type = Data Endpoint
+wMaxPacketSize:                  0x0120 = 0x120 bytes
+wInterval:                       0x0001
+bSyncAddress:                      0x00
+
+          ===>Audio Streaming Class Specific Audio Data Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x25 (CS_ENDPOINT)
+bDescriptorSubtype:                0x01 (EP_GENERAL)
+bmAttributes:                      0x01
+                                   (Sampling Frequency control)
+bLockDelayUnits:                   0x01 (Milliseconds)
+wLockDelay:                      0x0004
+
+          ===>Interface Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x04
+bInterfaceNumber:                  0x03
+bAlternateSetting:                 0x00
+bNumEndpoints:                     0x01
+bInterfaceClass:                   0x03  -> HID Interface Class
+bInterfaceSubClass:                0x00
+bInterfaceProtocol:                0x00
+iInterface:                        0x00
+
+          ===>HID Descriptor<===
+bLength:                           0x09
+bDescriptorType:                   0x21
+bcdHID:                          0x0111
+bCountryCode:                      0x00
+bNumDescriptors:                   0x01
+bDescriptorType:                   0x22 (Report Descriptor)
+wDescriptorLength:               0x008D
+
+          ===>Endpoint Descriptor<===
+bLength:                           0x07
+bDescriptorType:                   0x05
+bEndpointAddress:                  0x83  -> Direction: IN - EndpointID: 3
+bmAttributes:                      0x03  -> Interrupt Transfer Type
+wMaxPacketSize:                  0x0040 = 0x40 bytes
+bInterval:                         0x08
