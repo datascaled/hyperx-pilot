@@ -16,6 +16,14 @@
       "aria": "Toggle Sidetune monitoring"
     },
     "enabled": "On",
-    "disabled": "Off"
+    "disabled": "Off",
+    "locale": {
+      "label": "Language",
+      "placeholder": "Choose language",
+      "options": {
+        "en": "English",
+        "de": "German"
+      }
+    }
   }
 }

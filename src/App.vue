@@ -1,13 +1,41 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useI18n } from "vue-i18n";
 import H1 from "@/components/H1.vue";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Locale, messages } from "@/i18n";
 
-const { t } = useI18n();
+const LOCALE_STORAGE_KEY = "hyperx:locale";
+
+const { t, locale } = useI18n();
 
 const dtsEnabled = ref(false);
 const sidetuneEnabled = ref(false);
+
+const selectedLocale = computed<Locale>({
+  get: () => locale.value as Locale,
+  set: (value) => {
+    locale.value = value;
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, value);
+    }
+  },
+});
+
+onMounted(() => {
+  if (typeof window === "undefined") return;
+  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null;
+  if (stored && stored in messages) {
+    locale.value = stored;
+  }
+});
 </script>
 
 <template>
@@ -17,6 +45,34 @@ const sidetuneEnabled = ref(false);
     <div
       class="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-start gap-10 px-6 py-14"
     >
+      <div class="flex justify-end">
+        <div class="space-y-1 text-right">
+          <span
+            class="text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-500"
+          >
+            {{ t("settings.locale.label") }}
+          </span>
+          <Select v-model="selectedLocale">
+            <SelectTrigger
+              class="h-9 bg-white/90 text-sm font-medium text-neutral-700 shadow-sm shadow-rose-200/40"
+            >
+              <SelectValue :placeholder="t('settings.locale.placeholder')" />
+            </SelectTrigger>
+            <SelectContent
+              align="end"
+              class="w-36 bg-white/95 shadow-lg shadow-rose-200/60"
+            >
+              <SelectItem value="en">
+                {{ t("settings.locale.options.en") }}
+              </SelectItem>
+              <SelectItem value="de">
+                {{ t("settings.locale.options.de") }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <header class="space-y-3 text-center text-neutral-900">
         <img
           draggable="false"
@@ -55,9 +111,14 @@ const sidetuneEnabled = ref(false);
 
             <div class="flex flex-col items-end mt-1">
               <Switch
-                v-model="dtsEnabled"
+                v-model:checked="dtsEnabled"
                 :aria-label="t('settings.dts.aria')"
               />
+              <span
+                class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+              >
+                {{ dtsEnabled ? t("settings.enabled") : t("settings.disabled") }}
+              </span>
             </div>
           </article>
 
@@ -74,7 +135,14 @@ const sidetuneEnabled = ref(false);
             </div>
 
             <div class="flex flex-col items-end mt-1">
-              <Switch v-model="sidetuneEnabled" />
+              <Switch v-model:checked="sidetuneEnabled" />
+              <span
+                class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
+              >
+                {{
+                  sidetuneEnabled ? t("settings.enabled") : t("settings.disabled")
+                }}
+              </span>
             </div>
           </article>
         </div>
