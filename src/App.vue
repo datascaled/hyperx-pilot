@@ -114,18 +114,15 @@ async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
   }
 }
 
-watch(
-  sidetuneEnabled,
-  async (enabled, previous) => {
-    if (suppressSidetoneWatcher) {
-      suppressSidetoneWatcher = false;
-      return;
-    }
-    if (!selectedDeviceId.value || devicesLoading.value) return;
-    const fallback = previous ?? !enabled;
-    await pushSidetoneState(enabled, fallback);
+watch(sidetuneEnabled, async (enabled, previous) => {
+  if (suppressSidetoneWatcher) {
+    suppressSidetoneWatcher = false;
+    return;
   }
-);
+  if (!selectedDeviceId.value || devicesLoading.value) return;
+  const fallback = previous ?? !enabled;
+  await pushSidetoneState(enabled, fallback);
+});
 
 watch(selectedDeviceId, async (deviceId, previous) => {
   if (devicesLoading.value || deviceId === previous || !deviceId) return;
@@ -173,9 +170,7 @@ watch(selectedDeviceId, async (deviceId, previous) => {
             <SelectTrigger
               class="h-9 bg-white/90 text-sm font-medium text-neutral-700 shadow-sm shadow-rose-200/40"
             >
-              <SelectValue
-                :placeholder="t('settings.device.placeholder')"
-              />
+              <SelectValue :placeholder="t('settings.device.placeholder')" />
             </SelectTrigger>
             <SelectContent
               align="center"
@@ -191,10 +186,7 @@ watch(selectedDeviceId, async (deviceId, previous) => {
             </SelectContent>
           </Select>
 
-          <p
-            v-if="deviceError"
-            class="text-xs font-medium text-rose-600"
-          >
+          <p v-if="deviceError" class="text-xs font-medium text-rose-600">
             {{ deviceError }}
           </p>
         </div>
