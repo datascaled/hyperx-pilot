@@ -15,6 +15,10 @@
       "description": "Let your microphone feed a bit of your own voice for natural monitoring.",
       "aria": "Toggle Sidetune monitoring"
     },
+    "device": {
+      "label": "Headset",
+      "placeholder": "Select a headset"
+    },
     "enabled": "On",
     "disabled": "Off",
     "locale": {

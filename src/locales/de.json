@@ -15,6 +15,10 @@
       "description": "Leite deine eigene Stimme leicht auf das Headset für natürliches Monitoring.",
       "aria": "Sidetune-Monitoring umschalten"
     },
+    "device": {
+      "label": "Headset",
+      "placeholder": "Headset auswählen"
+    },
     "enabled": "Ein",
     "disabled": "Aus",
     "locale": {
