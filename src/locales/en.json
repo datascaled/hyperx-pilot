@@ -1,33 +1,13 @@
 {
-  "app": {
-    "title": "HyperX Pilot",
-    "subtitle": "Personalize your headset like a pro."
-  },
-  "settings": {
-    "heading": "Audio settings",
-    "dts": {
-      "title": "DTS",
-      "description": "Enable spatial sound for rich, immersive listening.",
-      "aria": "Toggle DTS spatial audio"
-    },
-    "sidetune": {
-      "title": "Sidetune",
-      "description": "Let your microphone feed a bit of your own voice for natural monitoring.",
-      "aria": "Toggle Sidetune monitoring"
-    },
-    "device": {
-      "label": "Headset",
-      "placeholder": "Select a headset"
-    },
-    "enabled": "On",
-    "disabled": "Off",
-    "locale": {
-      "label": "Language",
-      "placeholder": "Choose language",
-      "options": {
-        "en": "English",
-        "de": "German"
-      }
-    }
-  }
+  "app.title": "HyperX Pilot",
+  "app.subtitle": "Personalize your headset like a pro.",
+  "settings.heading": "Audio settings",
+  "settings.sidetune.title": "Sidetune",
+  "settings.sidetune.description": "Let your microphone feed a bit of your own voice for natural monitoring.",
+  "settings.sidetune.aria": "Toggle Sidetune monitoring",
+  "settings.device.label": "Headset",
+  "settings.device.placeholder": "Select a headset",
+  "settings.locale.placeholder": "Choose language",
+  "settings.locale.options.en": "English",
+  "settings.locale.options.de": "German"
 }

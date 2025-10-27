@@ -22,7 +22,6 @@ interface DeviceOption {
 
 const { t, locale } = useI18n();
 
-const dtsEnabled = ref(false);
 const sidetuneEnabled = ref(false);
 const devices = ref<DeviceOption[]>([]);
 const devicesLoading = ref(true);

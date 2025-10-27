@@ -1,33 +1,13 @@
 {
-  "app": {
-    "title": "HyperX Pilot",
-    "subtitle": "Passe dein Headset wie die Profis an."
-  },
-  "settings": {
-    "heading": "Audioeinstellungen",
-    "dts": {
-      "title": "DTS",
-      "description": "Aktiviere räumlichen Klang für ein intensives Hörerlebnis.",
-      "aria": "DTS-Raumklang umschalten"
-    },
-    "sidetune": {
-      "title": "Sidetune",
-      "description": "Leite deine eigene Stimme leicht auf das Headset für natürliches Monitoring.",
-      "aria": "Sidetune-Monitoring umschalten"
-    },
-    "device": {
-      "label": "Headset",
-      "placeholder": "Headset auswählen"
-    },
-    "enabled": "Ein",
-    "disabled": "Aus",
-    "locale": {
-      "label": "Sprache",
-      "placeholder": "Sprache wählen",
-      "options": {
-        "en": "Englisch",
-        "de": "Deutsch"
-      }
-    }
-  }
+  "app.title": "HyperX Pilot",
+  "app.subtitle": "Passe dein Headset wie die Profis an.",
+  "settings.heading": "Audioeinstellungen",
+  "settings.sidetune.title": "Sidetune",
+  "settings.sidetune.description": "Leite deine eigene Stimme leicht auf das Headset für natürliches Monitoring.",
+  "settings.sidetune.aria": "Sidetune-Monitoring umschalten",
+  "settings.device.label": "Headset",
+  "settings.device.placeholder": "Headset auswählen",
+  "settings.locale.placeholder": "Sprache wählen",
+  "settings.locale.options.en": "Englisch",
+  "settings.locale.options.de": "Deutsch"
 }
