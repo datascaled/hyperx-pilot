@@ -31,7 +31,9 @@ const selectedLocale = computed<Locale>({
 
 onMounted(() => {
   if (typeof window === "undefined") return;
-  const stored = window.localStorage.getItem(LOCALE_STORAGE_KEY) as Locale | null;
+  const stored = window.localStorage.getItem(
+    LOCALE_STORAGE_KEY
+  ) as Locale | null;
   if (stored && stored in messages) {
     locale.value = stored;
   }
@@ -43,36 +45,8 @@ onMounted(() => {
     class="min-h-screen bg-linear-to-br from-rose-100 via-orange-50 to-white text-neutral-900"
   >
     <div
-      class="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-start gap-10 px-6 py-14"
+      class="mx-auto flex min-h-screen w-full max-w-sm flex-col justify-start gap-10 px-6 py-14 relative"
     >
-      <div class="flex justify-end">
-        <div class="space-y-1 text-right">
-          <span
-            class="text-[10px] font-semibold uppercase tracking-[0.3em] text-neutral-500"
-          >
-            {{ t("settings.locale.label") }}
-          </span>
-          <Select v-model="selectedLocale">
-            <SelectTrigger
-              class="h-9 bg-white/90 text-sm font-medium text-neutral-700 shadow-sm shadow-rose-200/40"
-            >
-              <SelectValue :placeholder="t('settings.locale.placeholder')" />
-            </SelectTrigger>
-            <SelectContent
-              align="end"
-              class="w-36 bg-white/95 shadow-lg shadow-rose-200/60"
-            >
-              <SelectItem value="en">
-                {{ t("settings.locale.options.en") }}
-              </SelectItem>
-              <SelectItem value="de">
-                {{ t("settings.locale.options.de") }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       <header class="space-y-3 text-center text-neutral-900">
         <img
           draggable="false"
@@ -110,15 +84,7 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-col items-end mt-1">
-              <Switch
-                v-model:checked="dtsEnabled"
-                :aria-label="t('settings.dts.aria')"
-              />
-              <span
-                class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
-              >
-                {{ dtsEnabled ? t("settings.enabled") : t("settings.disabled") }}
-              </span>
+              <Switch v-model="dtsEnabled" />
             </div>
           </article>
 
@@ -135,18 +101,31 @@ onMounted(() => {
             </div>
 
             <div class="flex flex-col items-end mt-1">
-              <Switch v-model:checked="sidetuneEnabled" />
-              <span
-                class="mt-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-500"
-              >
-                {{
-                  sidetuneEnabled ? t("settings.enabled") : t("settings.disabled")
-                }}
-              </span>
+              <Switch v-model="sidetuneEnabled" />
             </div>
           </article>
         </div>
       </section>
+      <div class="mx-auto">
+        <Select v-model="selectedLocale">
+          <SelectTrigger
+            class="h-9 bg-white/90 text-sm font-medium text-neutral-700 shadow-sm shadow-rose-200/40"
+          >
+            <SelectValue :placeholder="t('settings.locale.placeholder')" />
+          </SelectTrigger>
+          <SelectContent
+            align="end"
+            class="w-36 bg-white/95 shadow-lg shadow-rose-200/60"
+          >
+            <SelectItem value="en">
+              {{ t("settings.locale.options.en") }}
+            </SelectItem>
+            <SelectItem value="de">
+              {{ t("settings.locale.options.de") }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
     </div>
   </main>
 </template>
