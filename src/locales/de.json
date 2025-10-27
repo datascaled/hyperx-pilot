@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "HyperX Pilot",
+    "subtitle": "Passe dein Headset wie die Profis an."
+  },
+  "settings": {
+    "heading": "Audioeinstellungen",
+    "dts": {
+      "title": "DTS",
+      "description": "Aktiviere räumlichen Klang für ein intensives Hörerlebnis.",
+      "aria": "DTS-Raumklang umschalten"
+    },
+    "sidetune": {
+      "title": "Sidetune",
+      "description": "Leite deine eigene Stimme leicht auf das Headset für natürliches Monitoring.",
+      "aria": "Sidetune-Monitoring umschalten"
+    },
+    "enabled": "Ein",
+    "disabled": "Aus"
+  }
+}

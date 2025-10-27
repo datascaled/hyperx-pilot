@@ -1,0 +1,21 @@
+{
+  "app": {
+    "title": "HyperX Pilot",
+    "subtitle": "Personalize your headset like a pro."
+  },
+  "settings": {
+    "heading": "Audio settings",
+    "dts": {
+      "title": "DTS",
+      "description": "Enable spatial sound for rich, immersive listening.",
+      "aria": "Toggle DTS spatial audio"
+    },
+    "sidetune": {
+      "title": "Sidetune",
+      "description": "Let your microphone feed a bit of your own voice for natural monitoring.",
+      "aria": "Toggle Sidetune monitoring"
+    },
+    "enabled": "On",
+    "disabled": "Off"
+  }
+}
