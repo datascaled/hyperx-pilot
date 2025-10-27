@@ -245,26 +245,7 @@ watch(
         </h2>
 
         <div class="mt-6 grid gap-6">
-          <article
-            class="rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40 relative"
-          >
-            <div class="space-y-1.5">
-              <h3 class="text-base font-semibold text-neutral-900">
-                {{ t("settings.dts.title") }}
-              </h3>
-              <p class="text-xs leading-relaxed text-neutral-600">
-                {{ t("settings.dts.description") }}
-              </p>
-            </div>
-
-            <div class="absolute top-5 right-5">
-              <Switch v-model="dtsEnabled" />
-            </div>
-          </article>
-
-          <article
-            class="rounded-2xl border border-black/5 bg-white p-4 shadow-sm shadow-rose-200/40 relative"
-          >
+          <article class="relative">
             <div class="space-y-1.5">
               <h3 class="text-base font-semibold text-neutral-900">
                 {{ t("settings.sidetune.title") }}
@@ -274,7 +255,7 @@ watch(
               </p>
             </div>
 
-            <div class="absolute top-5 right-5">
+            <div class="absolute top-1 right-0">
               <Switch
                 v-model="sidetuneEnabled"
                 :aria-label="t('settings.sidetune.aria')"
