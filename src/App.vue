@@ -98,6 +98,7 @@ async function loadDevices() {
 }
 
 let suppressSidetoneWatcher = false;
+let sidetoneRefreshPending = false;
 
 async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
   if (!selectedDeviceId.value || devicesLoading.value) return;
@@ -111,11 +112,19 @@ async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
     sidetuneEnabled.value = fallbackState;
   } finally {
     sidetoneBusy.value = false;
+    if (sidetoneRefreshPending) {
+      sidetoneRefreshPending = false;
+      await refreshSidetoneState();
+    }
   }
 }
 
 async function refreshSidetoneState() {
-  if (!selectedDeviceId.value || devicesLoading.value || sidetoneBusy.value) {
+  if (!selectedDeviceId.value || devicesLoading.value) {
+    return;
+  }
+  if (sidetoneBusy.value) {
+    sidetoneRefreshPending = true;
     return;
   }
   sidetoneBusy.value = true;
@@ -132,6 +141,10 @@ async function refreshSidetoneState() {
     sidetoneError.value = describeError(error);
   } finally {
     sidetoneBusy.value = false;
+    if (sidetoneRefreshPending) {
+      sidetoneRefreshPending = false;
+      await refreshSidetoneState();
+    }
   }
 }
 
