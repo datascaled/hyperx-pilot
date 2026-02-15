@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { invoke } from "@tauri-apps/api/core";
 import H1 from "@/components/H1.vue";
@@ -14,6 +14,7 @@ import {
 import { Locale, messages } from "@/i18n";
 
 const LOCALE_STORAGE_KEY = "hyperx:locale";
+const DEVICE_SCAN_INTERVAL_MS = 3000;
 
 interface DeviceOption {
   id: string;
@@ -52,7 +53,7 @@ const selectedLocale = computed<Locale>({
 });
 
 onMounted(() => {
-  loadDevices();
+  void loadDevices();
   if (typeof window === "undefined") return;
   const stored = window.localStorage.getItem(
     LOCALE_STORAGE_KEY
@@ -60,6 +61,16 @@ onMounted(() => {
   if (stored && stored in messages) {
     locale.value = stored;
   }
+  deviceScanTimer = window.setInterval(() => {
+    void loadDevices({ silent: true });
+  }, DEVICE_SCAN_INTERVAL_MS);
+});
+
+onUnmounted(() => {
+  if (typeof window === "undefined") return;
+  if (deviceScanTimer === null) return;
+  window.clearInterval(deviceScanTimer);
+  deviceScanTimer = null;
 });
 
 function describeError(error: unknown): string {
@@ -76,28 +87,64 @@ function describeError(error: unknown): string {
   }
 }
 
-async function loadDevices() {
-  devicesLoading.value = true;
+let deviceScanTimer: number | null = null;
+let devicesRequestInFlight = false;
+
+async function loadDevices(options: { silent?: boolean } = {}) {
+  if (devicesRequestInFlight) return;
+  devicesRequestInFlight = true;
+  const silent = options.silent ?? false;
+  let selectionChanged = false;
+  if (!silent) {
+    devicesLoading.value = true;
+  }
   deviceError.value = null;
+  const previousSelection = selectedDeviceId.value;
   try {
     const result = await invoke<DeviceOption[]>("list_hyperx_devices");
     devices.value = result;
-    if (result.length > 0) {
+    const selectedStillAvailable =
+      !!previousSelection && result.some((device) => device.id === previousSelection);
+    if (selectedStillAvailable) {
+      selectedDeviceId.value = previousSelection;
+    } else if (result.length > 0) {
       selectedDeviceId.value = result[0].id;
     } else {
       selectedDeviceId.value = null;
     }
+    selectionChanged = selectedDeviceId.value !== previousSelection;
   } catch (error) {
     deviceError.value = describeError(error);
     console.error("Failed to load HyperX devices:", error);
     selectedDeviceId.value = null;
+    selectionChanged = selectedDeviceId.value !== previousSelection;
   } finally {
-    devicesLoading.value = false;
+    if (!silent) {
+      devicesLoading.value = false;
+    }
+    devicesRequestInFlight = false;
+  }
+
+  if (selectedDeviceId.value) {
+    if (!silent || selectionChanged) {
+      await refreshSidetoneState();
+    }
+  } else {
+    sidetoneError.value = null;
+    applySidetoneStateFromDevice(false);
   }
 }
 
 let suppressSidetoneWatcher = false;
 let sidetoneRefreshPending = false;
+
+function applySidetoneStateFromDevice(enabled: boolean) {
+  if (sidetuneEnabled.value === enabled) {
+    return;
+  }
+  suppressSidetoneWatcher = true;
+  sidetuneEnabled.value = enabled;
+}
 
 async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
   if (!selectedDeviceId.value || devicesLoading.value) return;
@@ -107,8 +154,7 @@ async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
     await invoke("set_sidetone", { deviceId: selectedDeviceId.value, enabled });
   } catch (error) {
     sidetoneError.value = describeError(error);
-    suppressSidetoneWatcher = true;
-    sidetuneEnabled.value = fallbackState;
+    applySidetoneStateFromDevice(fallbackState);
   } finally {
     sidetoneBusy.value = false;
     if (sidetoneRefreshPending) {
@@ -133,8 +179,7 @@ async function refreshSidetoneState() {
       deviceId: selectedDeviceId.value,
     });
     if (typeof state === "boolean") {
-      suppressSidetoneWatcher = true;
-      sidetuneEnabled.value = state;
+      applySidetoneStateFromDevice(state);
     }
   } catch (error) {
     sidetoneError.value = describeError(error);
@@ -163,8 +208,7 @@ watch(
     if (deviceId === previous) return;
     if (!deviceId) {
       sidetoneError.value = null;
-      suppressSidetoneWatcher = true;
-      sidetuneEnabled.value = false;
+      applySidetoneStateFromDevice(false);
       return;
     }
     if (devicesLoading.value) return;
@@ -230,6 +274,12 @@ watch(
 
           <p v-if="deviceError" class="text-xs font-medium text-rose-600">
             {{ deviceError }}
+          </p>
+          <p
+            v-else-if="!devicesLoading && !devices.length"
+            class="text-xs font-medium text-amber-700"
+          >
+            {{ t("settings.device.notConnected") }}
           </p>
         </div>
       </section>

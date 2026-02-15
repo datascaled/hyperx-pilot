@@ -9,5 +9,6 @@
   "settings.device.placeholder": "Select a headset",
   "settings.locale.placeholder": "Choose language",
   "settings.locale.options.en": "English",
-  "settings.locale.options.de": "German"
+  "settings.locale.options.de": "German",
+  "settings.device.notConnected": "No supported headset connected."
 }

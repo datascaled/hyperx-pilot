@@ -1,13 +1,13 @@
 mod hyperx;
 
 use hyperx::{
-    read_sidetone_state as hyperx_read_sidetone_state, set_sidetone as hyperx_set_sidetone,
-    DeviceId, DeviceMetadata,
+    connected_devices as hyperx_connected_devices, read_sidetone_state as hyperx_read_sidetone_state,
+    set_sidetone as hyperx_set_sidetone, DeviceId, DeviceMetadata,
 };
 
 #[tauri::command]
-fn list_hyperx_devices() -> Vec<DeviceMetadata> {
-    hyperx::supported_devices().to_vec()
+fn list_hyperx_devices() -> Result<Vec<DeviceMetadata>, String> {
+    hyperx_connected_devices().map_err(|err| err.to_string())
 }
 
 #[tauri::command]

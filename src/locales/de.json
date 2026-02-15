@@ -9,5 +9,6 @@
   "settings.device.placeholder": "Headset auswählen",
   "settings.locale.placeholder": "Sprache wählen",
   "settings.locale.options.en": "Englisch",
-  "settings.locale.options.de": "Deutsch"
+  "settings.locale.options.de": "Deutsch",
+  "settings.device.notConnected": "Kein unterstütztes Headset eingesteckt."
 }

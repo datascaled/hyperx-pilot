@@ -136,9 +136,23 @@ impl fmt::Display for ControlError {
 
 impl std::error::Error for ControlError {}
 
-/// Return a static list of known HyperX devices.
-pub fn supported_devices() -> &'static [DeviceMetadata] {
-    DEVICE_CATALOG
+/// Return supported HyperX devices that are currently connected via HID.
+pub fn connected_devices() -> Result<Vec<DeviceMetadata>, ControlError> {
+    let api = HidApi::new().map_err(|source| ControlError::HidInit { source })?;
+
+    let devices = DEVICE_CATALOG
+        .iter()
+        .copied()
+        .filter(|device| {
+            let descriptor = find_descriptor(device.id);
+            api.device_list().any(|candidate| {
+                candidate.vendor_id() == descriptor.vendor_id
+                    && candidate.product_id() == descriptor.product_id
+            })
+        })
+        .collect();
+
+    Ok(devices)
 }
 
 /// Toggle the sidetone feature for a particular device.
