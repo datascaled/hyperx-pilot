@@ -2,6 +2,10 @@
 
 HyperX Pilot is a lightweight Tauri + Vue desktop companion for HyperX headsets. The initial release targets the HyperX Cloud III (wired) headset and focuses on a single task: toggling sidetone on and off without having to install HyperX's NGenuity suite. Support for additional models will be added as their HID behaviour is documented.
 
+## Installation
+
+Navigate to releases and download the latest one.
+
 ## What It Does
 - lists compatible HyperX headsets and lets you pick the active device
 - reads the current sidetone setting via HID feature reports
