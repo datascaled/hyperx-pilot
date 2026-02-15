@@ -38,5 +38,5 @@ You need a USB-connected HyperX Cloud III (wired) headset for the HID interactio
 
 ## Limitations & Roadmap
 - Currently tested with the HyperX Cloud III (wired); other models will be added once their HID traffic is captured and validated.
-- No persistence of custom levels—just on/off control as exposed through the HID report.
+- User preferences are persisted locally (language, selected headset, sidetone preference per supported device id).
 - Contributions for additional devices are welcome as long as they rely on the documented HID interface.
