@@ -13,12 +13,25 @@ import {
 } from "@/components/ui/select";
 import { Locale, messages } from "@/i18n";
 
-const LOCALE_STORAGE_KEY = "hyperx:locale";
+const LEGACY_LOCALE_STORAGE_KEY = "hyperx:locale";
+const APP_SETTINGS_STORAGE_KEY = "hyperx:settings";
+const APP_SETTINGS_VERSION = 1;
 const DEVICE_SCAN_INTERVAL_MS = 3000;
 
 interface DeviceOption {
   id: string;
   label: string;
+}
+
+interface DeviceSettings {
+  sidetuneEnabled?: boolean;
+}
+
+interface AppSettings {
+  version: number;
+  locale: Locale;
+  selectedDeviceId: string | null;
+  devices: Record<string, DeviceSettings>;
 }
 
 const { t, locale } = useI18n();
@@ -46,21 +59,14 @@ const selectedLocale = computed<Locale>({
   get: () => locale.value as Locale,
   set: (value) => {
     locale.value = value;
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(LOCALE_STORAGE_KEY, value);
-    }
+    persistLocale(value);
   },
 });
 
 onMounted(() => {
+  loadPersistedSettings();
   void loadDevices();
   if (typeof window === "undefined") return;
-  const stored = window.localStorage.getItem(
-    LOCALE_STORAGE_KEY
-  ) as Locale | null;
-  if (stored && stored in messages) {
-    locale.value = stored;
-  }
   deviceScanTimer = window.setInterval(() => {
     void loadDevices({ silent: true });
   }, DEVICE_SCAN_INTERVAL_MS);
@@ -87,6 +93,100 @@ function describeError(error: unknown): string {
   }
 }
 
+function isLocale(value: unknown): value is Locale {
+  return typeof value === "string" && value in messages;
+}
+
+function defaultSettings(): AppSettings {
+  return {
+    version: APP_SETTINGS_VERSION,
+    locale: "en",
+    selectedDeviceId: null,
+    devices: {},
+  };
+}
+
+function parseStoredSettings(raw: string | null): AppSettings | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<AppSettings> | null;
+    if (!parsed || typeof parsed !== "object") return null;
+
+    const settings = defaultSettings();
+    if (isLocale(parsed.locale)) {
+      settings.locale = parsed.locale;
+    }
+    if (typeof parsed.selectedDeviceId === "string") {
+      settings.selectedDeviceId = parsed.selectedDeviceId;
+    }
+    if (parsed.selectedDeviceId === null) {
+      settings.selectedDeviceId = null;
+    }
+    if (parsed.devices && typeof parsed.devices === "object") {
+      for (const [deviceId, value] of Object.entries(parsed.devices)) {
+        if (!value || typeof value !== "object") continue;
+        const sidetuneEnabled = (value as DeviceSettings).sidetuneEnabled;
+        if (typeof sidetuneEnabled === "boolean") {
+          settings.devices[deviceId] = { sidetuneEnabled };
+        }
+      }
+    }
+    return settings;
+  } catch {
+    return null;
+  }
+}
+
+let settings = defaultSettings();
+
+function persistSettings() {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  window.localStorage.setItem(LEGACY_LOCALE_STORAGE_KEY, settings.locale);
+}
+
+function loadPersistedSettings() {
+  if (typeof window === "undefined") return;
+
+  const parsed = parseStoredSettings(
+    window.localStorage.getItem(APP_SETTINGS_STORAGE_KEY)
+  );
+  if (parsed) {
+    settings = parsed;
+  } else {
+    const legacyLocale = window.localStorage.getItem(LEGACY_LOCALE_STORAGE_KEY);
+    if (isLocale(legacyLocale)) {
+      settings.locale = legacyLocale;
+    }
+    persistSettings();
+  }
+
+  locale.value = settings.locale;
+}
+
+function persistLocale(value: Locale) {
+  if (settings.locale === value) return;
+  settings.locale = value;
+  persistSettings();
+}
+
+function persistSelectedDevice(deviceId: string | null) {
+  if (!deviceId || settings.selectedDeviceId === deviceId) return;
+  settings.selectedDeviceId = deviceId;
+  persistSettings();
+}
+
+function persistedSidetuneForDevice(deviceId: string): boolean | undefined {
+  return settings.devices[deviceId]?.sidetuneEnabled;
+}
+
+function persistSidetuneForDevice(deviceId: string, enabled: boolean) {
+  const current = settings.devices[deviceId];
+  if (current?.sidetuneEnabled === enabled) return;
+  settings.devices[deviceId] = { sidetuneEnabled: enabled };
+  persistSettings();
+}
+
 let deviceScanTimer: number | null = null;
 let devicesRequestInFlight = false;
 
@@ -94,7 +194,6 @@ async function loadDevices(options: { silent?: boolean } = {}) {
   if (devicesRequestInFlight) return;
   devicesRequestInFlight = true;
   const silent = options.silent ?? false;
-  let selectionChanged = false;
   if (!silent) {
     devicesLoading.value = true;
   }
@@ -103,21 +202,22 @@ async function loadDevices(options: { silent?: boolean } = {}) {
   try {
     const result = await invoke<DeviceOption[]>("list_hyperx_devices");
     devices.value = result;
+
+    const preferredSelection = previousSelection ?? settings.selectedDeviceId;
     const selectedStillAvailable =
-      !!previousSelection && result.some((device) => device.id === previousSelection);
+      !!preferredSelection && result.some((device) => device.id === preferredSelection);
     if (selectedStillAvailable) {
-      selectedDeviceId.value = previousSelection;
+      selectedDeviceId.value = preferredSelection;
     } else if (result.length > 0) {
       selectedDeviceId.value = result[0].id;
     } else {
       selectedDeviceId.value = null;
     }
-    selectionChanged = selectedDeviceId.value !== previousSelection;
+    persistSelectedDevice(selectedDeviceId.value);
   } catch (error) {
     deviceError.value = describeError(error);
     console.error("Failed to load HyperX devices:", error);
     selectedDeviceId.value = null;
-    selectionChanged = selectedDeviceId.value !== previousSelection;
   } finally {
     if (!silent) {
       devicesLoading.value = false;
@@ -126,7 +226,8 @@ async function loadDevices(options: { silent?: boolean } = {}) {
   }
 
   if (selectedDeviceId.value) {
-    if (!silent || selectionChanged) {
+    if (!silent) {
+      await applyPersistedSidetonePreference(selectedDeviceId.value);
       await refreshSidetoneState();
     }
   } else {
@@ -146,12 +247,21 @@ function applySidetoneStateFromDevice(enabled: boolean) {
   sidetuneEnabled.value = enabled;
 }
 
+async function applyPersistedSidetonePreference(deviceId: string) {
+  const persisted = persistedSidetuneForDevice(deviceId);
+  if (typeof persisted !== "boolean") return;
+  await pushSidetoneState(persisted, sidetuneEnabled.value);
+}
+
 async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
-  if (!selectedDeviceId.value || devicesLoading.value) return;
+  const deviceId = selectedDeviceId.value;
+  if (!deviceId || devicesLoading.value) return;
   sidetoneBusy.value = true;
   sidetoneError.value = null;
   try {
-    await invoke("set_sidetone", { deviceId: selectedDeviceId.value, enabled });
+    await invoke("set_sidetone", { deviceId, enabled });
+    persistSelectedDevice(deviceId);
+    persistSidetuneForDevice(deviceId, enabled);
   } catch (error) {
     sidetoneError.value = describeError(error);
     applySidetoneStateFromDevice(fallbackState);
@@ -165,7 +275,8 @@ async function pushSidetoneState(enabled: boolean, fallbackState: boolean) {
 }
 
 async function refreshSidetoneState() {
-  if (!selectedDeviceId.value || devicesLoading.value) {
+  const deviceId = selectedDeviceId.value;
+  if (!deviceId || devicesLoading.value) {
     return;
   }
   if (sidetoneBusy.value) {
@@ -176,10 +287,12 @@ async function refreshSidetoneState() {
   sidetoneError.value = null;
   try {
     const state = await invoke<boolean | null>("get_sidetone_state", {
-      deviceId: selectedDeviceId.value,
+      deviceId,
     });
     if (typeof state === "boolean") {
       applySidetoneStateFromDevice(state);
+      persistSelectedDevice(deviceId);
+      persistSidetuneForDevice(deviceId, state);
     }
   } catch (error) {
     sidetoneError.value = describeError(error);
@@ -211,7 +324,9 @@ watch(
       applySidetoneStateFromDevice(false);
       return;
     }
+    persistSelectedDevice(deviceId);
     if (devicesLoading.value) return;
+    await applyPersistedSidetonePreference(deviceId);
     await refreshSidetoneState();
   },
   { immediate: true }
