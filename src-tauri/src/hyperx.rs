@@ -19,7 +19,7 @@ pub struct DeviceMetadata {
 
 const DEVICE_CATALOG: &[DeviceMetadata] = &[DeviceMetadata {
     id: DeviceId::CloudIiiWired,
-    label: "Cloud III (wired)",
+    label: "Cloud III (USB)",
 }];
 
 #[derive(Debug, Clone, Copy)]

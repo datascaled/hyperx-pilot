@@ -25,6 +25,7 @@ interface DeviceOption {
 
 interface DeviceSettings {
   sidetuneEnabled?: boolean;
+  virtualSurroundEnabled?: boolean;
 }
 
 interface AppSettings {
@@ -37,12 +38,15 @@ interface AppSettings {
 const { t, locale } = useI18n();
 
 const sidetuneEnabled = ref(false);
+const virtualSurroundEnabled = ref(false);
 const devices = ref<DeviceOption[]>([]);
 const devicesLoading = ref(true);
 const deviceError = ref<string | null>(null);
 const selectedDeviceId = ref<string | null>(null);
 const sidetoneBusy = ref(false);
 const sidetoneError = ref<string | null>(null);
+const virtualSurroundBusy = ref(false);
+const virtualSurroundError = ref<string | null>(null);
 
 const deviceSelection = computed<string>({
   get: () => selectedDeviceId.value ?? "",
@@ -53,6 +57,13 @@ const deviceSelection = computed<string>({
 
 const canToggleSidetone = computed(
   () => !!selectedDeviceId.value && !devicesLoading.value && !sidetoneBusy.value
+);
+
+const canToggleVirtualSurround = computed(
+  () =>
+    !!selectedDeviceId.value &&
+    !devicesLoading.value &&
+    !virtualSurroundBusy.value
 );
 
 const selectedLocale = computed<Locale>({
@@ -125,9 +136,23 @@ function parseStoredSettings(raw: string | null): AppSettings | null {
     if (parsed.devices && typeof parsed.devices === "object") {
       for (const [deviceId, value] of Object.entries(parsed.devices)) {
         if (!value || typeof value !== "object") continue;
-        const sidetuneEnabled = (value as DeviceSettings).sidetuneEnabled;
-        if (typeof sidetuneEnabled === "boolean") {
-          settings.devices[deviceId] = { sidetuneEnabled };
+        const stored = value as DeviceSettings;
+        const sidetuneEnabled =
+          typeof stored.sidetuneEnabled === "boolean"
+            ? stored.sidetuneEnabled
+            : undefined;
+        const virtualSurroundEnabled =
+          typeof stored.virtualSurroundEnabled === "boolean"
+            ? stored.virtualSurroundEnabled
+            : undefined;
+        if (
+          typeof sidetuneEnabled === "boolean" ||
+          typeof virtualSurroundEnabled === "boolean"
+        ) {
+          settings.devices[deviceId] = {
+            sidetuneEnabled,
+            virtualSurroundEnabled,
+          };
         }
       }
     }
@@ -180,11 +205,38 @@ function persistedSidetuneForDevice(deviceId: string): boolean | undefined {
   return settings.devices[deviceId]?.sidetuneEnabled;
 }
 
-function persistSidetuneForDevice(deviceId: string, enabled: boolean) {
+function persistedVirtualSurroundForDevice(deviceId: string): boolean | undefined {
+  return settings.devices[deviceId]?.virtualSurroundEnabled;
+}
+
+function persistDeviceSettings(
+  deviceId: string,
+  updates: Partial<DeviceSettings>
+) {
   const current = settings.devices[deviceId];
-  if (current?.sidetuneEnabled === enabled) return;
-  settings.devices[deviceId] = { sidetuneEnabled: enabled };
+  const next: DeviceSettings = {
+    sidetuneEnabled: current?.sidetuneEnabled,
+    virtualSurroundEnabled: current?.virtualSurroundEnabled,
+    ...updates,
+  };
+
+  if (
+    current?.sidetuneEnabled === next.sidetuneEnabled &&
+    current?.virtualSurroundEnabled === next.virtualSurroundEnabled
+  ) {
+    return;
+  }
+
+  settings.devices[deviceId] = next;
   persistSettings();
+}
+
+function persistSidetuneForDevice(deviceId: string, enabled: boolean) {
+  persistDeviceSettings(deviceId, { sidetuneEnabled: enabled });
+}
+
+function persistVirtualSurroundForDevice(deviceId: string, enabled: boolean) {
+  persistDeviceSettings(deviceId, { virtualSurroundEnabled: enabled });
 }
 
 let deviceScanTimer: number | null = null;
@@ -229,10 +281,14 @@ async function loadDevices(options: { silent?: boolean } = {}) {
     if (!silent) {
       await applyPersistedSidetonePreference(selectedDeviceId.value);
       await refreshSidetoneState();
+      await applyPersistedVirtualSurroundPreference(selectedDeviceId.value);
+      await refreshVirtualSurroundState();
     }
   } else {
     sidetoneError.value = null;
+    virtualSurroundError.value = null;
     applySidetoneStateFromDevice(false);
+    applyVirtualSurroundStateFromSystem(false);
   }
 }
 
@@ -305,6 +361,81 @@ async function refreshSidetoneState() {
   }
 }
 
+let suppressVirtualSurroundWatcher = false;
+let virtualSurroundRefreshPending = false;
+
+function applyVirtualSurroundStateFromSystem(enabled: boolean) {
+  if (virtualSurroundEnabled.value === enabled) {
+    return;
+  }
+  suppressVirtualSurroundWatcher = true;
+  virtualSurroundEnabled.value = enabled;
+}
+
+async function applyPersistedVirtualSurroundPreference(deviceId: string) {
+  const persisted = persistedVirtualSurroundForDevice(deviceId);
+  if (typeof persisted !== "boolean") return;
+  await pushVirtualSurroundState(persisted, virtualSurroundEnabled.value);
+}
+
+async function pushVirtualSurroundState(enabled: boolean, fallbackState: boolean) {
+  const deviceId =
+    selectedDeviceId.value ?? settings.selectedDeviceId ?? "cloud_iii_wired";
+  if (enabled && !selectedDeviceId.value) return;
+  if (devicesLoading.value) return;
+
+  virtualSurroundBusy.value = true;
+  virtualSurroundError.value = null;
+  try {
+    await invoke("set_virtual_surround", { deviceId, enabled });
+    if (selectedDeviceId.value) {
+      persistSelectedDevice(deviceId);
+    }
+    persistVirtualSurroundForDevice(deviceId, enabled);
+  } catch (error) {
+    virtualSurroundError.value = describeError(error);
+    applyVirtualSurroundStateFromSystem(fallbackState);
+  } finally {
+    virtualSurroundBusy.value = false;
+    if (virtualSurroundRefreshPending) {
+      virtualSurroundRefreshPending = false;
+      await refreshVirtualSurroundState();
+    }
+  }
+}
+
+async function refreshVirtualSurroundState() {
+  const deviceId = selectedDeviceId.value;
+  if (!deviceId || devicesLoading.value) {
+    return;
+  }
+  if (virtualSurroundBusy.value) {
+    virtualSurroundRefreshPending = true;
+    return;
+  }
+
+  virtualSurroundBusy.value = true;
+  virtualSurroundError.value = null;
+  try {
+    const state = await invoke<boolean | null>("get_virtual_surround_state", {
+      deviceId,
+    });
+    if (typeof state === "boolean") {
+      applyVirtualSurroundStateFromSystem(state);
+      persistSelectedDevice(deviceId);
+      persistVirtualSurroundForDevice(deviceId, state);
+    }
+  } catch (error) {
+    virtualSurroundError.value = describeError(error);
+  } finally {
+    virtualSurroundBusy.value = false;
+    if (virtualSurroundRefreshPending) {
+      virtualSurroundRefreshPending = false;
+      await refreshVirtualSurroundState();
+    }
+  }
+}
+
 watch(sidetuneEnabled, async (enabled, previous) => {
   if (suppressSidetoneWatcher) {
     suppressSidetoneWatcher = false;
@@ -315,19 +446,36 @@ watch(sidetuneEnabled, async (enabled, previous) => {
   await pushSidetoneState(enabled, fallback);
 });
 
+watch(virtualSurroundEnabled, async (enabled, previous) => {
+  if (suppressVirtualSurroundWatcher) {
+    suppressVirtualSurroundWatcher = false;
+    return;
+  }
+  if (!selectedDeviceId.value || devicesLoading.value) return;
+  const fallback = previous ?? !enabled;
+  await pushVirtualSurroundState(enabled, fallback);
+});
+
 watch(
   selectedDeviceId,
   async (deviceId, previous) => {
     if (deviceId === previous) return;
     if (!deviceId) {
       sidetoneError.value = null;
+      virtualSurroundError.value = null;
+      if (virtualSurroundEnabled.value) {
+        await pushVirtualSurroundState(false, true);
+      }
       applySidetoneStateFromDevice(false);
+      applyVirtualSurroundStateFromSystem(false);
       return;
     }
     persistSelectedDevice(deviceId);
     if (devicesLoading.value) return;
     await applyPersistedSidetonePreference(deviceId);
     await refreshSidetoneState();
+    await applyPersistedVirtualSurroundPreference(deviceId);
+    await refreshVirtualSurroundState();
   },
   { immediate: true }
 );
@@ -409,6 +557,31 @@ watch(
         </h2>
 
         <div class="mt-6 grid gap-6">
+          <article class="relative">
+            <div class="space-y-1.5">
+              <h3 class="text-base font-semibold text-neutral-900">
+                {{ t("settings.virtualSurround.title") }}
+              </h3>
+              <p class="text-xs leading-relaxed text-neutral-600">
+                {{ t("settings.virtualSurround.description") }}
+              </p>
+            </div>
+
+            <div class="absolute top-1 right-0">
+              <Switch
+                v-model="virtualSurroundEnabled"
+                :aria-label="t('settings.virtualSurround.aria')"
+                :disabled="!canToggleVirtualSurround"
+              />
+              <p
+                v-if="virtualSurroundError"
+                class="mt-2 max-w-[180px] text-right text-xs font-medium text-rose-600"
+              >
+                {{ virtualSurroundError }}
+              </p>
+            </div>
+          </article>
+
           <article class="relative">
             <div class="space-y-1.5">
               <h3 class="text-base font-semibold text-neutral-900">
