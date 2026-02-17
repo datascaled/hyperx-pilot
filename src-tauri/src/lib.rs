@@ -40,6 +40,11 @@ fn get_virtual_surround_state(device_id: DeviceId) -> Result<Option<bool>, Strin
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .on_window_event(|_window, event| {
+            if matches!(event, tauri::WindowEvent::CloseRequested { .. }) {
+                let _ = system_audio_set_virtual_surround(DeviceId::CloudIiiWired, false);
+            }
+        })
         .invoke_handler(tauri::generate_handler![
             list_hyperx_devices,
             set_sidetone,

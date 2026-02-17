@@ -102,16 +102,21 @@ mod macos {
         kAudioDevicePropertyDeviceUID, kAudioDevicePropertyScopeOutput,
         kAudioDevicePropertyStreams, kAudioHardwarePropertyDefaultOutputDevice,
         kAudioHardwarePropertyDevices, kAudioObjectPropertyElementMain, kAudioObjectPropertyName,
-        kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject, kCFStringEncodingUTF8,
+        kAudioObjectPropertyScopeGlobal, kAudioObjectSystemObject, kCFAllocatorDefault,
+        kCFBooleanFalse, kCFStringEncodingUTF8, kCFTypeArrayCallBacks,
+        kCFTypeDictionaryKeyCallBacks, kCFTypeDictionaryValueCallBacks,
+        AudioHardwareCreateAggregateDevice, AudioHardwareDestroyAggregateDevice,
         AudioObjectGetPropertyData, AudioObjectGetPropertyDataSize, AudioObjectID,
-        AudioObjectPropertyAddress, AudioObjectSetPropertyData, CFRelease, CFStringGetCString,
-        CFStringGetLength, CFStringGetMaximumSizeForEncoding, CFStringRef,
+        AudioObjectPropertyAddress, AudioObjectSetPropertyData, CFArrayAppendValue,
+        CFArrayCreateMutable, CFDictionaryCreateMutable, CFDictionarySetValue, CFRelease,
+        CFStringCreateWithCString, CFStringGetCString, CFStringGetLength,
+        CFStringGetMaximumSizeForEncoding, CFStringRef,
     };
     use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
     use cpal::{BufferSize, SampleFormat, SampleRate, Stream, StreamConfig};
     use ringbuf::traits::{Consumer, Producer, Split};
     use ringbuf::HeapRb;
-    use std::ffi::c_void;
+    use std::ffi::{c_void, CString};
     use std::fs::{self, File};
     use std::io::Write;
     use std::path::{Path, PathBuf};
@@ -122,6 +127,8 @@ mod macos {
     use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
     const BLACKHOLE_DEVICE_NAME: &str = "BlackHole 2ch";
+    const RUNTIME_OUTPUT_DEVICE_NAME: &str = "HyperX Pilot";
+    const RUNTIME_OUTPUT_DEVICE_UID: &str = "ch.datascale.hyperx-pilot.aggregate";
     const BLACKHOLE_VERSION: &str = "0.6.1";
     const BLACKHOLE_URL: &str = "https://existential.audio/downloads/BlackHole2ch-0.6.1.pkg";
     const BLACKHOLE_SHA256: &str =
@@ -199,6 +206,7 @@ mod macos {
                 kind: "output",
                 query: BLACKHOLE_DEVICE_NAME.to_string(),
             })?;
+        let runtime_output = ensure_runtime_output_device(&blackhole.uid)?;
 
         let previous_default_id = get_default_output_device_id()?;
         let previous_default = output_devices
@@ -214,17 +222,18 @@ mod macos {
             &output_devices,
             device_id,
             blackhole.id,
+            runtime_output.id,
             previous_default.id,
         )?;
 
         append_debug_log(&format!(
-            "enable_virtual_surround target=\"{}\" previous_default=\"{}\" blackhole=\"{}\"",
-            target_output.name, previous_default.name, blackhole.name
+            "enable_virtual_surround target=\"{}\" previous_default=\"{}\" blackhole=\"{}\" runtime_output=\"{}\"",
+            target_output.name, previous_default.name, blackhole.name, runtime_output.name
         ));
 
         let bridge = start_audio_bridge(&target_output, &blackhole)?;
 
-        if let Err(error) = set_default_output_device(blackhole.id) {
+        if let Err(error) = set_default_output_device(runtime_output.id) {
             append_debug_log(
                 "enable_virtual_surround failed to set default output, dropping bridge",
             );
@@ -275,6 +284,7 @@ mod macos {
         }
 
         stop_bridge(bridge);
+        destroy_runtime_output_device()?;
 
         append_debug_log("disable_virtual_surround complete");
         Ok(())
@@ -329,10 +339,253 @@ mod macos {
         })
     }
 
+    fn ensure_runtime_output_device(blackhole_uid: &str) -> Result<OutputDevice, SystemAudioError> {
+        if let Some(existing) = find_output_device_by_uid(RUNTIME_OUTPUT_DEVICE_UID)? {
+            return Ok(existing);
+        }
+
+        create_runtime_output_device(blackhole_uid)?;
+
+        for _ in 0..40 {
+            if let Some(created) = find_output_device_by_uid(RUNTIME_OUTPUT_DEVICE_UID)? {
+                return Ok(created);
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        Err(SystemAudioError::DeviceNotFound {
+            kind: "output",
+            query: RUNTIME_OUTPUT_DEVICE_NAME.to_string(),
+        })
+    }
+
+    fn destroy_runtime_output_device() -> Result<(), SystemAudioError> {
+        let Some(device) = find_output_device_by_uid(RUNTIME_OUTPUT_DEVICE_UID)? else {
+            return Ok(());
+        };
+
+        let status = unsafe { AudioHardwareDestroyAggregateDevice(device.id) };
+        if status != 0 {
+            return Err(SystemAudioError::CoreAudio {
+                context: "destroying runtime aggregate output device",
+                status,
+            });
+        }
+
+        for _ in 0..20 {
+            if find_output_device_by_uid(RUNTIME_OUTPUT_DEVICE_UID)?.is_none() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(100));
+        }
+
+        Ok(())
+    }
+
+    fn create_runtime_output_device(blackhole_uid: &str) -> Result<(), SystemAudioError> {
+        let mut aggregate_id: AudioObjectID = 0;
+
+        let key_uid = cf_string("uid")?;
+        let key_name = cf_string("name")?;
+        let key_subdevices = cf_string("subdevices")?;
+        let key_master = cf_string("master")?;
+        let key_private = cf_string("private")?;
+
+        let value_uid = cf_string(RUNTIME_OUTPUT_DEVICE_UID)?;
+        let value_name = cf_string(RUNTIME_OUTPUT_DEVICE_NAME)?;
+        let value_master = cf_string(blackhole_uid)?;
+        let value_subdevice_uid = cf_string(blackhole_uid)?;
+
+        let subdevice_dict = unsafe {
+            CFDictionaryCreateMutable(
+                kCFAllocatorDefault,
+                0,
+                &kCFTypeDictionaryKeyCallBacks,
+                &kCFTypeDictionaryValueCallBacks,
+            )
+        };
+        if subdevice_dict.is_null() {
+            unsafe {
+                cf_release_many(&[
+                    key_uid.cast(),
+                    key_name.cast(),
+                    key_subdevices.cast(),
+                    key_master.cast(),
+                    key_private.cast(),
+                    value_uid.cast(),
+                    value_name.cast(),
+                    value_master.cast(),
+                    value_subdevice_uid.cast(),
+                ]);
+            }
+            return Err(SystemAudioError::CommandFailed {
+                context: "creating aggregate subdevice dictionary",
+                details: "CFDictionaryCreateMutable returned null".to_string(),
+            });
+        }
+
+        unsafe {
+            CFDictionarySetValue(
+                subdevice_dict,
+                key_uid.cast::<c_void>(),
+                value_subdevice_uid.cast::<c_void>(),
+            );
+        }
+
+        let subdevice_array =
+            unsafe { CFArrayCreateMutable(kCFAllocatorDefault, 0, &kCFTypeArrayCallBacks) };
+        if subdevice_array.is_null() {
+            unsafe {
+                cf_release_many(&[
+                    subdevice_dict.cast(),
+                    key_uid.cast(),
+                    key_name.cast(),
+                    key_subdevices.cast(),
+                    key_master.cast(),
+                    key_private.cast(),
+                    value_uid.cast(),
+                    value_name.cast(),
+                    value_master.cast(),
+                    value_subdevice_uid.cast(),
+                ]);
+            }
+            return Err(SystemAudioError::CommandFailed {
+                context: "creating aggregate subdevice array",
+                details: "CFArrayCreateMutable returned null".to_string(),
+            });
+        }
+
+        unsafe {
+            CFArrayAppendValue(subdevice_array, subdevice_dict.cast::<c_void>());
+        }
+
+        let aggregate_dict = unsafe {
+            CFDictionaryCreateMutable(
+                kCFAllocatorDefault,
+                0,
+                &kCFTypeDictionaryKeyCallBacks,
+                &kCFTypeDictionaryValueCallBacks,
+            )
+        };
+        if aggregate_dict.is_null() {
+            unsafe {
+                cf_release_many(&[
+                    subdevice_array.cast(),
+                    subdevice_dict.cast(),
+                    key_uid.cast(),
+                    key_name.cast(),
+                    key_subdevices.cast(),
+                    key_master.cast(),
+                    key_private.cast(),
+                    value_uid.cast(),
+                    value_name.cast(),
+                    value_master.cast(),
+                    value_subdevice_uid.cast(),
+                ]);
+            }
+            return Err(SystemAudioError::CommandFailed {
+                context: "creating aggregate device dictionary",
+                details: "CFDictionaryCreateMutable returned null".to_string(),
+            });
+        }
+
+        unsafe {
+            CFDictionarySetValue(
+                aggregate_dict,
+                key_uid.cast::<c_void>(),
+                value_uid.cast::<c_void>(),
+            );
+            CFDictionarySetValue(
+                aggregate_dict,
+                key_name.cast::<c_void>(),
+                value_name.cast::<c_void>(),
+            );
+            CFDictionarySetValue(
+                aggregate_dict,
+                key_subdevices.cast::<c_void>(),
+                subdevice_array.cast::<c_void>(),
+            );
+            CFDictionarySetValue(
+                aggregate_dict,
+                key_master.cast::<c_void>(),
+                value_master.cast::<c_void>(),
+            );
+            CFDictionarySetValue(
+                aggregate_dict,
+                key_private.cast::<c_void>(),
+                kCFBooleanFalse.cast::<c_void>(),
+            );
+        }
+
+        let status =
+            unsafe { AudioHardwareCreateAggregateDevice(aggregate_dict.cast(), &mut aggregate_id) };
+
+        unsafe {
+            cf_release_many(&[
+                aggregate_dict.cast(),
+                subdevice_array.cast(),
+                subdevice_dict.cast(),
+                key_uid.cast(),
+                key_name.cast(),
+                key_subdevices.cast(),
+                key_master.cast(),
+                key_private.cast(),
+                value_uid.cast(),
+                value_name.cast(),
+                value_master.cast(),
+                value_subdevice_uid.cast(),
+            ]);
+        }
+
+        if status != 0 {
+            return Err(SystemAudioError::CoreAudio {
+                context: "creating runtime aggregate output device",
+                status,
+            });
+        }
+
+        append_debug_log(&format!(
+            "created runtime output device \"{RUNTIME_OUTPUT_DEVICE_NAME}\" (id={aggregate_id})"
+        ));
+        Ok(())
+    }
+
+    fn cf_string(value: &str) -> Result<CFStringRef, SystemAudioError> {
+        let c_string = CString::new(value).map_err(|_| SystemAudioError::CommandFailed {
+            context: "building CoreFoundation string",
+            details: format!("string contains interior NUL byte: {value:?}"),
+        })?;
+        let cf_string = unsafe {
+            CFStringCreateWithCString(
+                kCFAllocatorDefault,
+                c_string.as_ptr(),
+                kCFStringEncodingUTF8,
+            )
+        };
+        if cf_string.is_null() {
+            return Err(SystemAudioError::CommandFailed {
+                context: "building CoreFoundation string",
+                details: "CFStringCreateWithCString returned null".to_string(),
+            });
+        }
+        Ok(cf_string)
+    }
+
+    unsafe fn cf_release_many(values: &[*const c_void]) {
+        for value in values {
+            if !value.is_null() {
+                unsafe {
+                    CFRelease(*value);
+                }
+            }
+        }
+    }
+
     fn choose_target_output(
         output_devices: &[OutputDevice],
         device_id: DeviceId,
         blackhole_id: AudioObjectID,
+        runtime_output_id: AudioObjectID,
         previous_default_id: AudioObjectID,
     ) -> Result<OutputDevice, SystemAudioError> {
         let preferred_fragment = match device_id {
@@ -343,6 +596,7 @@ mod macos {
             .iter()
             .find(|device| {
                 device.id != blackhole_id
+                    && device.id != runtime_output_id
                     && device
                         .name
                         .to_ascii_lowercase()
@@ -355,7 +609,11 @@ mod macos {
 
         if let Some(device) = output_devices
             .iter()
-            .find(|device| device.id == previous_default_id && device.id != blackhole_id)
+            .find(|device| {
+                device.id == previous_default_id
+                    && device.id != blackhole_id
+                    && device.id != runtime_output_id
+            })
             .cloned()
         {
             return Ok(device);
@@ -363,7 +621,7 @@ mod macos {
 
         output_devices
             .iter()
-            .find(|device| device.id != blackhole_id)
+            .find(|device| device.id != blackhole_id && device.id != runtime_output_id)
             .cloned()
             .ok_or_else(|| SystemAudioError::DeviceNotFound {
                 kind: "output",

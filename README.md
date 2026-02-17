@@ -48,11 +48,12 @@ On first activation, the app:
 - restarts CoreAudio and enables the realtime surround bridge
 
 When enabled:
-- default system output is switched to `BlackHole 2ch`
+- default system output is switched to a runtime aggregate device named `HyperX Pilot`
 - audio is processed in realtime and played back on the selected headset output
 
 When disabled:
 - the previous default output device is restored
+- the runtime `HyperX Pilot` output device is removed again
 
 If your system does not expose BlackHole immediately after installation, a reboot may still be required once.
 
